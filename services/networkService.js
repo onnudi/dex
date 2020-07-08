@@ -1,4 +1,4 @@
-import { getExchangeContract } from "./web3Service";
+import { getExchangeContract, getTokenContract } from "./web3Service";
 
 export function getSwapABI(data) {
   /*TODO: Get Swap ABI*/
@@ -19,6 +19,10 @@ export function getAllowance(srcTokenAddress, address, spender) {
 /* Get Exchange Rate from Smart Contract */
 export function getExchangeRate(srcTokenAddress, destTokenAddress, srcAmount) {
   const exchangeContract = getExchangeContract();
+  const tokenContract = getTokenContract();
+
+  const accoutn = tokenContract.eth.getAccounts();
+  accoutn.then(res => console.log(res))
 
   return new Promise((resolve, reject) => {
     exchangeContract.methods.getExchangeRate(srcTokenAddress, destTokenAddress, srcAmount).call().then((result) => {

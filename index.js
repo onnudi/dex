@@ -55,11 +55,16 @@ $(function () {
     $(this).parent().siblings('.dropdown__trigger').find('.selected-target').html(selectedSymbol);
     
     /* TODO: Implement changing rate for Source and Dest Token here. */
+
+
   });
 
   // Import Metamask
   $('#import-metamask').on('click', function () {
     /* TODO: Importing wallet by Metamask goes here. */
+    if(window.ethereum){
+      window.ethereum.enable();
+    }
   });
 
   // Handle on Source Amount Changed
