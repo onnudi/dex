@@ -1,4 +1,5 @@
-import { getExchangeContract, getTokenContract } from "./web3Service";
+import { getExchangeContract, getTokenContract, getWeb3Instance } from "./web3Service";
+import EnvConfig from "../configs/env"
 
 export function getSwapABI(data) {
   /*TODO: Get Swap ABI*/
@@ -16,14 +17,22 @@ export function getAllowance(srcTokenAddress, address, spender) {
   /*TODO: Get current allowance for a token in user wallet*/
 }
 
+
+export function approval(srcTokenAddress, amount){
+
+  if(srcTokenAddress.address == EnvConfig.TOKENS[1].address){
+    return;
+  }
+
+  
+
+
+}
+
+
 /* Get Exchange Rate from Smart Contract */
 export function getExchangeRate(srcTokenAddress, destTokenAddress, srcAmount) {
   const exchangeContract = getExchangeContract();
-  const tokenContract = getTokenContract();
-
-  const accoutn = tokenContract.eth.getAccounts();
-  accoutn.then(res => console.log(res))
-
   return new Promise((resolve, reject) => {
     exchangeContract.methods.getExchangeRate(srcTokenAddress, destTokenAddress, srcAmount).call().then((result) => {
       resolve(result)
@@ -33,6 +42,83 @@ export function getExchangeRate(srcTokenAddress, destTokenAddress, srcAmount) {
   })
 }
 
-export async function getTokenBalances(tokens, address) {
+export async function swapToken(srcToken, destToken, value){
+  const accounts = await getWeb3Instance().eth.getAccounts();
+  if(accounts == undefined || accounts == [] || accounts == null) {
+    return new Error(`Can't connect to account`);
+  }
+  const account =  accounts[0];
+
+  let txObj = {};
+  txObj.from = account;
+  if(srcToken.address == EnvConfig.TOKENS[2].address){
+    txObj.value = String(value * Math.pow(10, 18));
+  }
+  const exchangeContract = getExchangeContract();
+  return new Promise((resolve, reject)=> {
+    exchangeContract.methods.exchangeToken(srcToken.address, destToken.address, String(value * Math.pow(10, 18))).send(txObj).then((result) => {
+      resolve(result)
+    }, (errer) => {
+      reject(errer)
+    })
+  })
+
+}
+
+export async function transferToken(token, toAddress, value){
+  const accounts = await getWeb3Instance().eth.getAccounts();
+  if(accounts == undefined || accounts == [] || accounts == null) {
+    return new Error(`Can't connect to account`);
+  }
+  const account =  accounts[0];
+  if(token == EnvConfig.TOKENS[2].address){
+    return new Promise((resolve, reject)=>{
+      try{
+        const result = getWeb3Instance().eth.sendTransaction({
+          from:account,
+          to: toAddress,
+          value: String(value * Math.pow(10, 18))
+        });
+        resolve(result);
+      }
+      catch(error){
+        reject(error);
+      }
+    })
+  }
+  const tokenContract = getTokenContract(token);
+  return new Promise((resolve, reject) => {
+    tokenContract.methods.transfer(toAddress, String(value * Math.pow(10, 18))).send({
+      from:account
+    }).then((result) => {
+      resolve(result)
+    }, (errer) => {
+      reject(errer)
+    })
+  })
+}
+
+export async function getTokenBalances(token, address) {
   /*TODO: Get Token Balance*/
+  const accounts = await getWeb3Instance().eth.getAccounts();
+  const account = accounts[0];
+  if(token == EnvConfig.TOKENS[2].address){
+    return new Promise((resolve, reject)=>{
+      try{
+        const result = getWeb3Instance().eth.getBalance(account);
+        resolve(result);
+      }
+      catch(error){
+        reject(error);
+      }
+    })
+  }
+  const tokenContract = getTokenContract(token);
+  return new Promise((resolve, reject) => {
+    tokenContract.methods.balanceOf(account).call().then((result) => {
+      resolve(result)
+    }, (errer) => {
+      reject(errer)
+    })
+  })
 }

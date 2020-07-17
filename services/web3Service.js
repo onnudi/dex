@@ -11,8 +11,8 @@ export function getWeb3Instance() {
 
 export function getTokenContract(tokenAddress) {
   const web3 = getWeb3Instance();
-  // return new web3.eth.Contract(EnvConfig.TOKEN_ABI, tokenAddress);
-  return web3;
+  return new web3.eth.Contract(EnvConfig.TOKEN_ABI, tokenAddress);
+  // return web3;
 }
 
 export function getExchangeContract() {
