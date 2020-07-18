@@ -17,25 +17,35 @@ export function getAllowance(srcTokenAddress, address, spender) {
   /*TODO: Get current allowance for a token in user wallet*/
 }
 
+export async function getAccountAddress(){
+  return await getWeb3Instance().eth.getAccounts();
+}
 
-export function approval(srcTokenAddress, amount){
+export async function checkApprove(srcTokenAddress){
 
-  if(srcTokenAddress.address == EnvConfig.TOKENS[1].address){
-    return;
-  }
-
+  const accounts = await getWeb3Instance().eth.getAccounts();
+  const account = accounts[0];
   
+  const tokenContract = getTokenContract(srcTokenAddress);
+  const totalSupply = await tokenContract.methods.totalSupply().call();
+
+  return new Promise((resovle ,reject)=>{
+    tokenContract.methods.allowance(account, EnvConfig.EXCHANGE_CONTRACT_ADDRESS).call().then(res=> {
+      resovle(res == totalSupply);
+    }, error => {
+      reject(error);
+    })
+  })
 
 
 }
-
 
 /* Get Exchange Rate from Smart Contract */
 export function getExchangeRate(srcTokenAddress, destTokenAddress, srcAmount) {
   const exchangeContract = getExchangeContract();
   return new Promise((resolve, reject) => {
     exchangeContract.methods.getExchangeRate(srcTokenAddress, destTokenAddress, srcAmount).call().then((result) => {
-      resolve(result)
+      resolve(result);
     }, (error) => {
       reject(error);
     })
@@ -98,7 +108,7 @@ export async function transferToken(token, toAddress, value){
   })
 }
 
-export async function getTokenBalances(token, address) {
+export async function getTokenBalances(token) {
   /*TODO: Get Token Balance*/
   const accounts = await getWeb3Instance().eth.getAccounts();
   const account = accounts[0];

@@ -14,6 +14,7 @@
   <h1 class="main-title">Decentralized Exchange</h1>
   <div class="main-content">
     <div class="main-balance">
+      <div id="account__address">Account : Loading...</div>
       <div id="balance__eth">Ether : Loading...</div>
       <div id="balance__tka">Token A : Loading...</div>
       <div id="balance__tkb">Token B : Loading...</div>
@@ -116,6 +117,13 @@
 
 <div class="modal" id="confirm-transfer-modal">
   <div class="modal__content">This is the content of Confirm Transfer Modal</div>
+</div>
+
+<div class="modal-approve">
+  <div class="modal-approve__title">You have not approved, please approve first</div>
+  <div class="modal-approve__button">
+    <div class="button" id="button__approve">Approve</div>
+  </div>
 </div>
 
 <script src="index.js"></script>

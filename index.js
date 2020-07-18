@@ -20,9 +20,10 @@ $(function () {
     initiateSelectedToken(defaultSrcSymbol, defaultDestSymbol);
     initiateDefaultRate(defaultSrcSymbol, defaultDestSymbol);
     initBalances();
+    getAccount();
   }
 
-  setInterval(()=>{
+  setInterval(() => {
     initBalances();
     console.log("5s");
   }, 10000)
@@ -31,6 +32,16 @@ $(function () {
     window.ethereum.on('accountsChanged', accounts => {
       window.location.reload();
     })
+  }
+
+  function getAccount() {
+    networkService.getAccountAddress()
+      .then(res => {
+        console.log(res);
+        $('#account__address').text('Account : ' + res[0])
+      }).catch(err => {
+        console.log(err);
+      })
   }
 
   function initiateDropdown() {
@@ -43,6 +54,10 @@ $(function () {
     $('.dropdown__content').html(dropdownTokens);
   }
 
+  function approve(token) {
+
+  }
+
   function initiateSelectedToken(srcSymbol, destSymbol) {
     $('#selected-src-symbol').html(srcSymbol);
     $('#selected-dest-symbol').html(destSymbol);
@@ -52,28 +67,31 @@ $(function () {
   }
 
   function initBalances() {
-    networkService.getTokenBalances(EnvConfig.TOKENS[0].address).then((result) => {
-      const balance = result / Math.pow(10, 18);
-      $('#balance__tka').html('token a : ' + balance);
-    }).catch(error => {
-      console.log(error);
-      $('#balance__tka').html('token a : ' + 0);
-    })
-    networkService.getTokenBalances(EnvConfig.TOKENS[1].address).then((result) => {
-      const balance = result / Math.pow(10, 18);
-      $('#balance__tkb').html('token b : ' + balance);
-    }).catch(error => {
-      console.log(error);
-      $('#balance__tkb').html('token b : ' + 0);
-    })
+    networkService.getTokenBalances(EnvConfig.TOKENS[0].address)
+      .then((result) => {
+        const balance = result / Math.pow(10, 18);
+        $('#balance__tka').html('token a : ' + balance);
+      }).catch(error => {
+        console.log(error);
+        $('#balance__tka').html('token a : ' + 0);
+      })
+    networkService.getTokenBalances(EnvConfig.TOKENS[1].address)
+      .then((result) => {
+        const balance = result / Math.pow(10, 18);
+        $('#balance__tkb').html('token b : ' + balance);
+      }).catch(error => {
+        console.log(error);
+        $('#balance__tkb').html('token b : ' + 0);
+      })
 
-    networkService.getTokenBalances(EnvConfig.TOKENS[2].address).then((result) => {
-      const balance = result / Math.pow(10, 18);
-      $('#balance__eth').html('ether : ' + balance);
-    }).catch(error => {
-      console.log(error);
-      $('#balance__eth').html('ether : ' + 0);
-    })
+    networkService.getTokenBalances(EnvConfig.TOKENS[2].address)
+      .then((result) => {
+        const balance = result / Math.pow(10, 18);
+        $('#balance__eth').html('ether : ' + balance);
+      }).catch(error => {
+        console.log(error);
+        $('#balance__eth').html('ether : ' + 0);
+      })
   }
 
   function initiateDefaultRate(srcSymbol, destSymbol) {
@@ -82,12 +100,12 @@ $(function () {
     if (srcSymbol == destSymbol) {
       $('#exchange-rate').html(1);
       exChangeRate = 1;
-      if(isValidNumber(value)){
+      if (isValidNumber(value)) {
         $('.input-placeholder').html(exChangeRate * value);
       }
       return;
     }
-  
+
 
     const srctoken = findTokenBySymbol(srcSymbol);
     const desttoken = findTokenBySymbol(destSymbol);
@@ -95,21 +113,33 @@ $(function () {
 
     const defaultSrcAmount = (Math.pow(10, 18)).toString();
 
-    networkService.getExchangeRate(srctoken.address, desttoken.address, defaultSrcAmount).then((result) => {
-      const rate = result / Math.pow(10, 18);
-      $('#exchange-rate').html(rate);
-      exChangeRate = rate;
-      if(isValidNumber(value)){
-        $('.input-placeholder').html(exChangeRate * value);
-      }
-    }).catch((error) => {
-      console.log(error);
-      $('#exchange-rate').html(0);
-      exChangeRate = 0;
-      if(isValidNumber(value)){
-        $('.input-placeholder').html(exChangeRate * value);
-      }
-    });
+    networkService.getExchangeRate(srctoken.address, desttoken.address, defaultSrcAmount)
+      .then((result) => {
+        const rate = result / Math.pow(10, 18);
+        $('#exchange-rate').html(rate);
+        exChangeRate = rate;
+        if (isValidNumber(value)) {
+          $('.input-placeholder').html(exChangeRate * value);
+        }
+      }).catch((error) => {
+        console.log(error);
+        $('#exchange-rate').html(0);
+        exChangeRate = 0;
+        if (isValidNumber(value)) {
+          $('.input-placeholder').html(exChangeRate * value);
+        }
+      });
+  }
+
+
+  function swapToken(srcToken, destToken, value){
+    networkService.swapToken(srcToken, destToken, value)
+    .then(res => {
+      console.log(res);
+      initBalances();
+    }).catch(err => {
+      console.log(err);
+    })
   }
 
   function findTokenBySymbol(symbol) {
@@ -124,18 +154,21 @@ $(function () {
   })
 
   // on changing token from dropdown.
-  $(document).on('click', '.dropdown__item', function () {
+  $(document).on('click', '.dropdown__item', function (event) {
     const selectedsymbol = $(this).html();
     const selectedtarget = $(this).parent().siblings('.dropdown__trigger').find('.selected-target');
-    selectedtarget.html(selectedsymbol);
-    // if(selectedtarget.attr('id') == )
+    if (selectedtarget.attr('id') == 'selected-transfer-token') {
+      $('#selected-transfer-token').text(selectedsymbol);
+      return;
+    }
+    $(selectedtarget).text(selectedsymbol);
     /* todo: implement changing rate for source and dest token here. */
     const srctoken = $('#selected-src-symbol').text();
     const desttoken = $('#selected-dest-symbol').text();
     initiateSelectedToken(srctoken, desttoken);
     initiateDefaultRate(srctoken, desttoken);
-    
-   
+
+
 
   });
 
@@ -151,10 +184,10 @@ $(function () {
   $('#swap-source-amount').on('input change', function () {
     /* todo: fetching latest rate with new amount */
     const value = $(this).val();
-    if(!isValidNumber(value) && value != ''){
+    if (!isValidNumber(value) && value != '') {
       $('.input-error__swap').text('invalid number.')
       return;
-    }else {
+    } else {
       $('.input-error__swap').text('')
       /* todo: updating dest amount */
       // const srcTokenSym = $('#selected-src-symbol').text();
@@ -171,13 +204,13 @@ $(function () {
   $('#transfer-source-amount').on('input change', function () {
     /* TODO: Fetching latest rate with new amount */
     const value = $(this).val();
-    if(!isValidNumber(value) && value != ''){
+    if (!isValidNumber(value) && value != '') {
       $('.input-error__transfer').text('Invalid number.')
       return;
-    }else {
+    } else {
       $('.input-error__transfer').text('')
       /* TODO: Updating dest amount */
-      
+
     }
 
 
@@ -198,11 +231,43 @@ $(function () {
     const srcToken = findTokenBySymbol(srcTokenSym);
     const destToken = findTokenBySymbol(destTokenSym);
 
-    networkService.swapToken(srcToken, destToken, Number(value)).then(res =>{
-      console.log(res);
-    }).catch(err => {
-      console.log(err);
-    })
+    if (srcToken.address != EnvConfig.TOKENS[2].address) {
+      networkService.checkApprove(srcToken.address)
+        .then(isApproved => {
+          if (isApproved) {
+            //do transaction
+            networkService.getTokenBalances(srcToken.address)
+              .then(res => {
+                if (value * Math.pow(10, 18) > res) {
+                  const modal = $('#confirm-swap-modal');
+                  modal.find('.modal__content')
+                    .text('You do not have enough Token')
+                    .css('color', 'red');
+                  modal.addClass('modal--active');
+                  return;
+                }
+                swapToken(srcToken, destToken, Number(value))
+              }).catch(error => {
+                console.log(error);
+              })
+
+          } else {
+            //approve
+            const modal = $('#confirm-swap-modal');
+            const approveModal = $('.modal-approve');
+            modal.find('.modal__content')
+            .html(approveModal);
+          
+            modal.addClass('modal--active');
+            return;
+          }
+        })
+        .catch(error => {
+          //handle error
+          console.log(error);
+        })
+    }
+
 
   });
 
@@ -231,18 +296,40 @@ $(function () {
     $(this).removeClass('modal--active');
   });
 
-  $('#btn-transfer').on('click', function(){
+  $('#btn-transfer').on('click', function () {
     const tokenSym = $('#selected-transfer-token').text();
     const value = Number($('#transfer-source-amount').val());
     const destAddress = $('#transfer-address').val();
     const token = findTokenBySymbol(tokenSym);
-    console.log(token.address, destAddress, value);
-    networkService.transferToken(token.address, destAddress, value).then(res =>{
-      console.log(res);
-    }).catch(err => {
-      console.log(err);
-    })
-   
+
+    networkService.getTokenBalances(token.address)
+      .then(res => {
+        if (value * Math.pow(10, 18) > res) {
+          const modal = $('#confirm-transfer-modal');
+          modal.find('.modal__content')
+            .text('You do not have enough Token')
+            .css('color', 'red');
+          
+          modal.addClass('modal--active');
+          return;
+        }
+        networkService.transferToken(token.address, destAddress, value)
+          .then(res => {
+            console.log(res);
+          }).catch(err => {
+            console.log(err);
+          })
+      }).catch(error => {
+        console.log(error);
+      })
+
+
+
   })
+
+
+  function getBalanceByToken(token) {
+
+  }
 
 })
