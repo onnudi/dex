@@ -132,14 +132,14 @@ $(function () {
   }
 
 
-  function swapToken(srcToken, destToken, value){
+  function swapToken(srcToken, destToken, value) {
     networkService.swapToken(srcToken, destToken, value)
-    .then(res => {
-      console.log(res);
-      initBalances();
-    }).catch(err => {
-      console.log(err);
-    })
+      .then(res => {
+        console.log(res);
+        initBalances();
+      }).catch(err => {
+        console.log(err);
+      })
   }
 
   function findTokenBySymbol(symbol) {
@@ -170,6 +170,20 @@ $(function () {
 
 
 
+  });
+
+
+  $('#button__approve').on('click', function () {
+    const srcTokenSym = $('#selected-src-symbol').text();
+    const srcToken = findTokenBySymbol(srcTokenSym);
+    networkService.approval(srcToken.address)
+      .then(res => {
+        console.log(res);
+
+      })
+      .catch(error => {
+        alert(error);
+      })
   });
 
   // import metamask
@@ -205,17 +219,30 @@ $(function () {
     /* TODO: Fetching latest rate with new amount */
     const value = $(this).val();
     if (!isValidNumber(value) && value != '') {
-      $('.input-error__transfer').text('Invalid number.')
+      $('.input-error__transfer-value').text('Invalid number.')
       return;
     } else {
-      $('.input-error__transfer').text('')
+      $('.input-error__transfer-value').text('')
       /* TODO: Updating dest amount */
 
     }
 
-
-
   });
+
+  $('#transfer-address').on('input change', function () {
+    const address = $(this).val();
+    networkService.checkValidAddress(address)
+      .then(res => {
+        if (res) {
+          $('.input-error__transfer-address').text('')
+        } else {
+          $('.input-error__transfer-address').text('Invalid address.')
+        }
+      })
+
+
+  })
+
   // handle on click token in token dropdown list
   $('.dropdown__item').on('click', function () {
     $(this).parents('.dropdown').removeClass('dropdown--active');
@@ -256,8 +283,8 @@ $(function () {
             const modal = $('#confirm-swap-modal');
             const approveModal = $('.modal-approve');
             modal.find('.modal__content')
-            .html(approveModal);
-          
+              .html(approveModal);
+
             modal.addClass('modal--active');
             return;
           }
@@ -309,7 +336,7 @@ $(function () {
           modal.find('.modal__content')
             .text('You do not have enough Token')
             .css('color', 'red');
-          
+
           modal.addClass('modal--active');
           return;
         }
