@@ -1,5 +1,6 @@
 import * as networkService from "./services/networkService";
 import EnvConfig from "./configs/env";
+import swal from "sweetalert";
 
 $(function () {
 
@@ -25,7 +26,6 @@ $(function () {
 
   setInterval(() => {
     initBalances();
-    console.log("5s");
   }, 10000)
 
   if (window.ethereum) {
@@ -37,7 +37,6 @@ $(function () {
   function getAccount() {
     networkService.getAccountAddress()
       .then(res => {
-        console.log(res);
         $('#account__address').text('Account : ' + res[0])
       }).catch(err => {
         console.log(err);
@@ -72,7 +71,6 @@ $(function () {
         const balance = result / Math.pow(10, 18);
         $('#balance__tka').html('token a : ' + balance);
       }).catch(error => {
-        console.log(error);
         $('#balance__tka').html('token a : ' + 0);
       })
     networkService.getTokenBalances(EnvConfig.TOKENS[1].address)
@@ -80,7 +78,6 @@ $(function () {
         const balance = result / Math.pow(10, 18);
         $('#balance__tkb').html('token b : ' + balance);
       }).catch(error => {
-        console.log(error);
         $('#balance__tkb').html('token b : ' + 0);
       })
 
@@ -89,7 +86,6 @@ $(function () {
         const balance = result / Math.pow(10, 18);
         $('#balance__eth').html('ether : ' + balance);
       }).catch(error => {
-        console.log(error);
         $('#balance__eth').html('ether : ' + 0);
       })
   }
@@ -122,7 +118,6 @@ $(function () {
           $('.input-placeholder').html(exChangeRate * value);
         }
       }).catch((error) => {
-        console.log(error);
         $('#exchange-rate').html(0);
         exChangeRate = 0;
         if (isValidNumber(value)) {
@@ -210,9 +205,6 @@ $(function () {
       $('.input-placeholder').html(exChangeRate * value)
 
     }
-
-
-
   });
 
   $('#transfer-source-amount').on('input change', function () {
@@ -239,7 +231,6 @@ $(function () {
           $('.input-error__transfer-address').text('Invalid address.')
         }
       })
-
 
   })
 
@@ -324,36 +315,94 @@ $(function () {
   });
 
   $('#btn-transfer').on('click', function () {
+
     const tokenSym = $('#selected-transfer-token').text();
-    const value = Number($('#transfer-source-amount').val());
+    const inputValue = $('#transfer-source-amount').val();
+    if (!isValidNumber(inputValue)) {
+      swal({
+        title: "Error",
+        text: "Invalid number",
+        icon: "error"
+      })
+      return;
+    }
+
     const destAddress = $('#transfer-address').val();
+
+
+
+
+
     const token = findTokenBySymbol(tokenSym);
+    const value = Number(inputValue);
 
     networkService.getTokenBalances(token.address)
       .then(res => {
         if (value * Math.pow(10, 18) > res) {
-          const modal = $('#confirm-transfer-modal');
-          modal.find('.modal__content')
-            .text('You do not have enough Token')
-            .css('color', 'red');
-
-          modal.addClass('modal--active');
+          swal("Error", "You do not have enough Token!", "error");
+          return;
+        } else {
+          networkService.checkValidAddress(destAddress)
+            .then(res => {
+              if (res) {
+                networkService.estimgateGasTransfer(token.address, destAddress, value).then(res => {
+                  //confirm
+                  swal({
+                    title: "Are you sure?",
+                    text: `
+                  Transfer
+                  Value: ${value} ${tokenSym} 
+                  To: ${destAddress}
+                  Estimated gas: ${res}
+                  `,
+                    icon: "warning",
+                    buttons: true
+                  })
+                    .then((isOk) => {
+                      if (isOk) {
+                        swal.close();
+                        networkService.transferToken(token.address, destAddress, value)
+                          .then(res => {
+                            //success
+                            if (res.status) {
+                              swal("Transact successed!", {
+                                icon: "success",
+                                timer: 3000
+                              });
+                            } else { //failed
+                              swal("Transact failed!", {
+                                icon: "error",
+                                timer: 3000
+                              });
+                            }
+                          }).catch(err => {
+                            alertNetworkError();
+                          })
+                      }
+                      return;
+                    });
+                }).catch(err => {
+                  alertNetworkError();
+                })
+              } else {
+                swal("Error", "Invalid address!", "error");
+                return;
+              }
+            })
           return;
         }
-        networkService.transferToken(token.address, destAddress, value)
-          .then(res => {
-            console.log(res);
-          }).catch(err => {
-            console.log(err);
-          })
       }).catch(error => {
-        console.log(error);
+        alertNetworkError();
       })
-
-
-
   })
 
+  function alertNetworkError() {
+    swal("Something went wrong on the network! Please try later!", {
+      icon: "error",
+      button: true,
+      timer: 5000,
+    });
+  }
 
   function getBalanceByToken(token) {
 

@@ -100,6 +100,39 @@ export async function swapToken(srcToken, destToken, value) {
 
 }
 
+export async function estimgateGasTransfer(token, toAddress, value){
+  const accounts = await getWeb3Instance().eth.getAccounts();
+  if (accounts == undefined || accounts == [] || accounts == null) {
+    return new Error(`Can't connect to account`);
+  }
+  const account = accounts[0];
+  if (token == EnvConfig.TOKENS[2].address) {
+    return new Promise((resolve, reject) => {
+      try {
+        const gas = getWeb3Instance().eth.estimateGas({
+          from: account,
+          to: toAddress,
+          value: String(value * Math.pow(10, 18))
+        });
+        resolve(gas);
+      }
+      catch (error) {
+        reject(error);
+      }
+    })
+  }
+  const tokenContract = getTokenContract(token);
+  return new Promise((resolve, reject) => {
+    tokenContract.methods.transfer(toAddress, String(value * Math.pow(10, 18))).estimateGas({
+      from: account
+    }).then((gas) => {
+      resolve(gas)
+    }, (errer) => {
+      reject(errer)
+    })
+  })
+}
+
 export async function transferToken(token, toAddress, value) {
   const accounts = await getWeb3Instance().eth.getAccounts();
   if (accounts == undefined || accounts == [] || accounts == null) {
@@ -133,6 +166,8 @@ export async function transferToken(token, toAddress, value) {
   })
 }
 
+
+
 export async function getTokenBalances(token) {
   /*TODO: Get Token Balance*/
   const accounts = await getWeb3Instance().eth.getAccounts();
@@ -157,3 +192,9 @@ export async function getTokenBalances(token) {
     })
   })
 }
+
+
+//swap
+//transfer
+//approve
+
