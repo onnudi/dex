@@ -21,20 +21,18 @@ export async function getAccountAddress() {
   return await getWeb3Instance().eth.getAccounts();
 }
 
-export async function approval(token) {
+export async function approval(token, value) {
   try {
     const tokenContract = getTokenContract(token);
-    const totalSupply = await tokenContract.methods.totalSupply().call();
-    console.log(totalSupply);
     const accounts = await getWeb3Instance().eth.getAccounts();
     const account = accounts[0];
-    return tokenContract.methods.approve(EnvConfig.EXCHANGE_CONTRACT_ADDRESS, totalSupply).send({ from: account });
+    return tokenContract.methods.approve(EnvConfig.EXCHANGE_CONTRACT_ADDRESS, String(value * 10 ** 18)).send({ from: account });
   } catch (error) {
     return error;
   }
 }
 
-export async function checkApprove(srcTokenAddress) {
+export async function checkApprove(srcTokenAddress, spendValue) {
 
   const accounts = await getWeb3Instance().eth.getAccounts();
   const account = accounts[0];
@@ -44,7 +42,7 @@ export async function checkApprove(srcTokenAddress) {
 
   return new Promise((resovle, reject) => {
     tokenContract.methods.allowance(account, EnvConfig.EXCHANGE_CONTRACT_ADDRESS).call().then(res => {
-      resovle(res == totalSupply);
+      resovle(res/(10**18) >= spendValue);
     }, error => {
       reject(error);
     })
@@ -98,6 +96,29 @@ export async function swapToken(srcToken, destToken, value) {
     })
   })
 
+}
+
+
+export async function estimateGasSwapToken(srcToken, destToken, value){
+  const accounts = await getWeb3Instance().eth.getAccounts();
+  if (accounts == undefined || accounts == [] || accounts == null) {
+    return new Error(`Can't connect to account`);
+  }
+  const account = accounts[0];
+
+  let txObj = {};
+  txObj.from = account;
+  if (srcToken.address == EnvConfig.TOKENS[2].address) {
+    txObj.value = String(value * Math.pow(10, 18));
+  }
+  const exchangeContract = getExchangeContract();
+  return new Promise((resolve, reject) => {
+    exchangeContract.methods.exchangeToken(srcToken.address, destToken.address, String(value * Math.pow(10, 18))).estimateGas(txObj).then((result) => {
+      resolve(result)
+    }, (errer) => {
+      reject(errer)
+    })
+  })
 }
 
 export async function estimgateGasTransfer(token, toAddress, value){

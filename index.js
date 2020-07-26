@@ -4,6 +4,7 @@ import swal from "sweetalert";
 
 $(function () {
 
+
   const numberRegex = /^\s*[+-]?(\d+|\.\d+|\d+\.\d+|\d+\.)(e[+-]?\d+)?\s*$/
   const isValidNumber = function (s) {
     return numberRegex.test(s);
@@ -130,10 +131,20 @@ $(function () {
   function swapToken(srcToken, destToken, value) {
     networkService.swapToken(srcToken, destToken, value)
       .then(res => {
-        console.log(res);
-        initBalances();
+        if (res.status) {
+          swal("Transact successed!", {
+            icon: "success",
+            timer: 3000
+          });
+          initBalances();
+        } else { //failed
+          swal("Transact failed!", {
+            icon: "error",
+            timer: 3000
+          });
+        }
       }).catch(err => {
-        console.log(err);
+        alertNetworkError();
       })
   }
 
@@ -168,18 +179,29 @@ $(function () {
   });
 
 
-  $('#button__approve').on('click', function () {
+  function approve(value) {
     const srcTokenSym = $('#selected-src-symbol').text();
     const srcToken = findTokenBySymbol(srcTokenSym);
-    networkService.approval(srcToken.address)
+    networkService.approval(srcToken.address, value)
       .then(res => {
-        console.log(res);
-
+        if (res.status) {
+          swal("Transact successed!", {
+            icon: "success",
+            timer: 3000
+          });
+          initBalances();
+        } else { //failed
+          swal("Transact failed!", {
+            icon: "error",
+            timer: 3000
+          });
+        }
       })
       .catch(error => {
-        alert(error);
+        alertNetworkError();
       })
-  });
+  }
+
 
   // import metamask
   $('#import-metamask').on('click', function () {
@@ -250,39 +272,66 @@ $(function () {
     const destToken = findTokenBySymbol(destTokenSym);
 
     if (srcToken.address != EnvConfig.TOKENS[2].address) {
-      networkService.checkApprove(srcToken.address)
+      networkService.checkApprove(srcToken.address, value)
         .then(isApproved => {
           if (isApproved) {
             //do transaction
             networkService.getTokenBalances(srcToken.address)
               .then(res => {
                 if (value * Math.pow(10, 18) > res) {
-                  const modal = $('#confirm-swap-modal');
-                  modal.find('.modal__content')
-                    .text('You do not have enough Token')
-                    .css('color', 'red');
-                  modal.addClass('modal--active');
+                  swal("Error", "You do not have enough Token!", "error");
                   return;
                 }
-                swapToken(srcToken, destToken, Number(value))
+                networkService.estimateGasSwapToken(srcToken, destToken, Number(value)).then(res => {
+                  //confirm
+                  swal({
+                    title: "Are you sure?",
+                    text: `
+                  Swap
+                  From: ${value} ${srcTokenSym} 
+                  To: ${value * exChangeRate} ${destTokenSym}
+                  Estimated gas: ${res}
+                  `,
+                    icon: "warning",
+                    buttons: true
+                  })
+                    .then((isOk) => {
+                      if (isOk) {
+                        swal.close();
+                        swapToken(srcToken, destToken, Number(value))
+                      }
+                    });
+                })
               }).catch(error => {
-                console.log(error);
+                alertNetworkError();
               })
 
           } else {
             //approve
-            const modal = $('#confirm-swap-modal');
-            const approveModal = $('.modal-approve');
-            modal.find('.modal__content')
-              .html(approveModal);
+            swal({
+              title: "Approval",
+              text: `Please approve your token!`,
+              icon: "info",
+              content: {
+                element: "input",
+                attributes: {
+                  placeholder: "Type your ammount",
+                  type: "number",
+                },
+              },
+              buttons: true
+            })
+              .then((value) => {
+                if (value) {
+                  approve(value);
+                }
+              });
 
-            modal.addClass('modal--active');
             return;
           }
         })
         .catch(error => {
-          //handle error
-          console.log(error);
+          alertNetworkError();
         })
     }
 
@@ -328,11 +377,6 @@ $(function () {
     }
 
     const destAddress = $('#transfer-address').val();
-
-
-
-
-
     const token = findTokenBySymbol(tokenSym);
     const value = Number(inputValue);
 
