@@ -32,6 +32,7 @@ $(function () {
   if (window.ethereum) {
     window.ethereum.on('accountsChanged', accounts => {
       window.location.reload();
+      return;
     })
   }
 
@@ -129,23 +130,44 @@ $(function () {
 
 
   function swapToken(srcToken, destToken, value) {
-    networkService.swapToken(srcToken, destToken, value)
-      .then(res => {
-        if (res.status) {
-          swal("Transact successed!", {
-            icon: "success",
-            timer: 3000
-          });
-          initBalances();
-        } else { //failed
-          swal("Transact failed!", {
-            icon: "error",
-            timer: 3000
-          });
-        }
-      }).catch(err => {
-        alertNetworkError();
+    networkService.estimateGasSwapToken(srcToken, destToken, Number(value)).then(res => {
+      //confirm
+      swal({
+        title: "Are you sure?",
+        text: `
+              Swap
+              From: ${value} ${srcToken.symbol} 
+              To: ${value * exChangeRate} ${destToken.symbol}
+              Estimated gas: ${res}
+              `,
+        icon: "warning",
+        buttons: true
       })
+        .then((isOk) => {
+          if (isOk) {
+            swal.close();
+            networkService.swapToken(srcToken, destToken, value)
+              .then(res => {
+                if (res.status) {
+                  swal("Transact successed!", {
+                    icon: "success",
+                    timer: 3000
+                  });
+                  initBalances();
+                } else { //failed
+                  swal("Transact failed!", {
+                    icon: "error",
+                    timer: 3000
+                  });
+                }
+              }).catch(err => {
+                alertNetworkError();
+              })
+          }
+        });
+    })
+
+
   }
 
   function findTokenBySymbol(symbol) {
@@ -268,75 +290,66 @@ $(function () {
     const srcTokenSym = $('#selected-src-symbol').text();
     const destTokenSym = $('#selected-dest-symbol').text();
     const value = $('#swap-source-amount').val();
-    const srcToken = findTokenBySymbol(srcTokenSym);
-    const destToken = findTokenBySymbol(destTokenSym);
 
-    if (srcToken.address != EnvConfig.TOKENS[2].address) {
-      networkService.checkApprove(srcToken.address, value)
-        .then(isApproved => {
-          if (isApproved) {
-            //do transaction
-            networkService.getTokenBalances(srcToken.address)
-              .then(res => {
-                if (value * Math.pow(10, 18) > res) {
-                  swal("Error", "You do not have enough Token!", "error");
-                  return;
-                }
-                networkService.estimateGasSwapToken(srcToken, destToken, Number(value)).then(res => {
-                  //confirm
-                  swal({
-                    title: "Are you sure?",
-                    text: `
-                  Swap
-                  From: ${value} ${srcTokenSym} 
-                  To: ${value * exChangeRate} ${destTokenSym}
-                  Estimated gas: ${res}
-                  `,
-                    icon: "warning",
-                    buttons: true
-                  })
-                    .then((isOk) => {
-                      if (isOk) {
-                        swal.close();
-                        swapToken(srcToken, destToken, Number(value))
-                      }
-                    });
-                })
-              }).catch(error => {
-                alertNetworkError();
-              })
-
-          } else {
-            //approve
-            swal({
-              title: "Approval",
-              text: `Please approve your token!`,
-              icon: "info",
-              content: {
-                element: "input",
-                attributes: {
-                  placeholder: "Type your ammount",
-                  type: "number",
-                },
-              },
-              buttons: true
-            })
-              .then((value) => {
-                if (value) {
-                  approve(value);
-                }
-              });
-
-            return;
-          }
-        })
-        .catch(error => {
-          alertNetworkError();
-        })
+    if (!isValidNumber(value)) {
+      swal({
+        title: "Error",
+        text: "Invalid number",
+        icon: "error"
+      })
+      return;
     }
 
+    const srcToken = findTokenBySymbol(srcTokenSym);
+    const destToken = findTokenBySymbol(destTokenSym);
+    //do transaction
+    networkService.getTokenBalances(srcToken.address)
+      .then(res => {
+        if (value * Math.pow(10, 18) > res) {
+          swal("Error", "You do not have enough Token!", "error");
+          return;
+        }
 
-  });
+        if (srcToken.address != EnvConfig.TOKENS[2].address) {
+          networkService.checkApprove(srcToken.address, value)
+            .then(isApproved => {
+              if (isApproved) {
+                swapToken(srcToken, destToken, value);
+              } else {
+                //approve
+                swal({
+                  title: "Approval",
+                  text: `Please approve your token!`,
+                  icon: "info",
+                  content: {
+                    element: "input",
+                    attributes: {
+                      placeholder: "Type your ammount",
+                      type: "number",
+                    },
+                  },
+                  buttons: true
+                })
+                  .then((value) => {
+                    if (value) {
+                      approve(value);
+                    }
+                  });
+
+                return;
+              }
+            });
+        } else {
+          swapToken(srcToken, destToken, value);
+        }
+
+      }).catch(error => {
+        alertNetworkError();
+      })
+
+
+  })
+
 
   // tab processing
   $('.tab__item').on('click', function () {

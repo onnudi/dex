@@ -1,6 +1,7 @@
 const EnvConfig = {
   // RPC_ENDPOINT: 'https://rpc.testnet.tomochain.com',
-  RPC_ENDPOINT: 'http://localhost:7545',
+  // RPC_ENDPOINT: 'http://localhost:7545',
+  RPC_ENDPOINT: 'https://rinkeby.infura.io/v3/197aa29606f74fb887f33314b3a0cbb2',
   TOKEN_ABI: [
     {
       "constant": true,
@@ -315,6 +316,20 @@ const EnvConfig = {
     {
       "constant": true,
       "inputs": [],
+      "name": "trade",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
       "name": "DEFAULT_ADDRESS",
       "outputs": [
         {
@@ -459,22 +474,39 @@ const EnvConfig = {
       "payable": true,
       "stateMutability": "payable",
       "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_flag",
+          "type": "bool"
+        }
+      ],
+      "name": "setTradable",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
     }
   ],
-  EXCHANGE_CONTRACT_ADDRESS: '0x004BF9B51578e6e967cBB158D63Af7D418100f60',
+  EXCHANGE_CONTRACT_ADDRESS: '0xa543c859801b09c91e78D74886F32C5dC282007C',
+  // EXCHANGE_CONTRACT_ADDRESS: '0xD0e38f4C25e9eabBE87f2ff673402460d77cD46a',
   /* END TODO */
 
   TOKENS: [
     {
       "name": 'Token A',
       "symbol": 'TKA',
-      address: '0xbA0AFb97059A05A8Ca448F4870e7c231b1c46655',
+      address: '0x1b107a69081621e5f216e7BC217A2F942dBA54E2',
+      // address: '0x4C0a7AE8a92bDa627bF41Ef0B3105B80A3C9B051',
     },
     /* TODO: Change to your own deployed tokens. Remember to put 2 tokens here to support token to token swapping */
     {
       "name": 'TokenB',
       "symbol": 'TKB',
-      address: '0xA69FA88C0bC94d3b9DC40162D53b34C8F3543360',
+      address: '0xacAa13E2C52a2F14459E587B72e58d073e089253',
+      // address: '0xe4D9efFCB5442E4FE88bFDCF826f0377E4E6F406',
     },
     {
       "name": 'Ether',
@@ -486,3 +518,15 @@ const EnvConfig = {
 };
 
 export default EnvConfig;
+
+
+/*
+
+_e = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+_a = '0x4C0a7AE8a92bDa627bF41Ef0B3105B80A3C9B051'
+_b = '0xe4D9efFCB5442E4FE88bFDCF826f0377E4E6F406'
+_ra = '0x27A639935611432C50e79A1ded3702542cC55016'
+_rb = '0x99C9c6d95784239e34FFadAcF45F01c622F732d7'
+_ex = '0xD0e38f4C25e9eabBE87f2ff673402460d77cD46a'
+
+*/
