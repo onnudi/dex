@@ -284,11 +284,20 @@ $(function () {
   });
   // handle on swap now button clicked
   $('#swap-button').on('click', function () {
-    // const modalid = $(this).data('modal-id');
-    // $(`#${modalid}`).addClass('modal--active');
 
     const srcTokenSym = $('#selected-src-symbol').text();
     const destTokenSym = $('#selected-dest-symbol').text();
+
+
+    if (srcTokenSym == destTokenSym) {
+      swal({
+        title: "Error",
+        text: "Please choose different token!",
+        icon: "error"
+      });
+      return;
+    }
+
     const value = $('#swap-source-amount').val();
 
     if (!isValidNumber(value)) {

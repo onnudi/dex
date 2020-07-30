@@ -388,3 +388,8 @@ input {
   color: #1d244d;
   font-weight: bold;
 }
+
+.main-balance {
+  margin-bottom: 20px;
+  padding: 0px 20px;
+}
