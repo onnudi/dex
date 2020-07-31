@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@sweetalert2/theme-borderless": "^3.2.0",
     "browserify": "^16.5.0",
     "sweetalert": "^2.1.2",
+    "sweetalert2": "^9.17.1",
     "watchify": "^3.11.1",
     "web3": "^1.2.1"
   },

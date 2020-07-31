@@ -393,3 +393,19 @@ input {
   margin-bottom: 20px;
   padding: 0px 20px;
 }
+
+.select2-dropdown {
+  z-index: 1061;
+}
+
+.select2-container {
+  z-index: 2000;
+}
+
+ul.select2-results__options > li {
+  color: black;
+}
+
+.swal__content {
+  text-align: left;
+}
